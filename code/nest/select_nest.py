@@ -1,8 +1,17 @@
+'''
+输入convert_data_nest.csv文件，这个文件精度低，计算量少
+输出地图的宽高和机巢的选点坐标 地图的宽高是为了对机巢坐标做转换，配合其他精度的地图使用
+
+计划：
+将计算过程中离散点和机巢候选点的距离矩阵distance同时输出，用于做任务划分，具体怎么做再distance矩阵处有写
+'''
 import time
 import numpy as np
 import pandas as pd
 import pulp
 import random
+
+from tools import get_points_list
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 from scipy.spatial import distance_matrix
@@ -162,18 +171,6 @@ def read_csv(file_path, x_col='x', y_col='y'):
         print(f"发生错误：{e}")
         return None
 
-# 获取范围内一维坐标点
-def get_points(file_path):
-    df = pd.read_csv(file_path)
-    points = []
-    for index, row in df.iterrows():
-        for j, x in enumerate(row):
-            if x != -999 and not pd.isna(x):
-                points.append((index, j))
-
-    return points, df.shape
-
-
 
 # 对接外部接口
 def select_nest(file_path, R, k):
@@ -189,7 +186,7 @@ def select_nest(file_path, R, k):
     start_time = time.time()
 
     # 生成网格点
-    points, shape = get_points(file_path)
+    points, shape = get_points_list(file_path)
     print("需要覆盖的点数：", len(points))
 
     # 生成候选点
@@ -199,6 +196,12 @@ def select_nest(file_path, R, k):
 
     # 计算距离矩阵
     distance = distance_calculate(points, coordinates)
+
+    # 获取到机巢的id后，收敛distance矩阵，并抛出去
+    # 这样就是离散点到每个机巢的距离矩阵了
+    # 然后做判断，距离哪个近就标记id
+    #
+
 
     print("进入模型")
     #进入模型计算

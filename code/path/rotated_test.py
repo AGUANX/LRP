@@ -1,3 +1,11 @@
+'''
+这部分是为了计算任务区域的旋转牛耕法   还没模块化   要把mian函数改成接口
+计划：
+1. 接口输入单个任务区域的数据，高程矩阵  不需要覆盖的地方是nan
+2. 输出一个角度和电量消耗
+3. 把能耗模型改成外接模型，使用另外的文件去做
+'''
+
 import numpy as np
 import pandas as pd
 from osgeo import gdal
@@ -151,7 +159,7 @@ def calculate_path(path, hight, k_s, k_c):
 def main():
     start_time = time.time()
 
-    file_path = '../data/convert_data_nest.csv'
+    file_path = '../data/convert_data.csv'
     df = pd.read_csv(file_path)
 
     Z = df.values

@@ -1,8 +1,12 @@
+'''
+重复使用的小工具
 
+
+'''
 import pandas as pd
 
 
-def get_points(file_path):
+def get_points_list(file_path):
     '''
     获取范围可用坐标点, 返回包括可用坐标的一维列表
     :param file_path: 文件路径
