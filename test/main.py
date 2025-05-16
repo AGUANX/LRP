@@ -10,9 +10,23 @@ from energy import find_nearest_charging_station, check_battery_and_recharge, re
 from combined_viz import visualize_mission
 
 class EnhancedUAVMissionPlanner:
+    # 初始化无人机和区域设定
     def __init__(self, height_map_path=None, height_map=None, battery_capacity=15000000, battery_threshold=0.3,
                  num_charging_stations=8, num_mission_areas=2, mission_area_size='auto', area_size_range=(60, 120),
                  simplified=True, timeout=30, always_charge_after_mission=True):
+        '''
+        :param height_map_path:
+        :param height_map:  地图高程矩阵
+        :param battery_capacity:  无人机电池容量
+        :param battery_threshold:   无人机返航电量阈值百分比
+        :param num_charging_stations:   ？？？充电桩数量
+        :param num_mission_areas:   无人机任务区域个数
+        :param mission_area_size:
+        :param area_size_range:
+        :param simplified:
+        :param timeout:
+        :param always_charge_after_mission:
+        '''
         self.timeout = timeout
         self.always_charge_after_mission = always_charge_after_mission
 
@@ -73,13 +87,21 @@ class EnhancedUAVMissionPlanner:
             'wv': 1.0
         }
 
+
     def _generate_charging_stations(self):
+        '''
+        把矩形地图均分为要划分的数量
+        然后再均分区域内随机点判断是否可以做充电站
+
+        :return:
+        stations : 返回站点列表  充电站
+        '''
         stations = []
         rows, cols = self.height_map.shape
 
         grid_size = int(np.sqrt(self.num_charging_stations))
         cell_rows = rows // grid_size
-        cell_cols = cols // grid_size
+        cell_cols = cols // grid_size # 向下取整
 
         for i in range(grid_size):
             for j in range(grid_size):
@@ -108,7 +130,9 @@ class EnhancedUAVMissionPlanner:
 
         return stations
 
+
     def plan_multi_area_mission(self, start_point=None, end_point=None):
+
         self.full_path = []
         self.checkpoint_indices = []
         self.recharge_indices = []

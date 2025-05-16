@@ -13,14 +13,18 @@ def main():
         from scipy.ndimage import gaussian_filter
         height_map = gaussian_filter(height_map, sigma=5)
     else:
+        print('使用文件', file_path)
         height_map = read_map_from_csv(file_path)
 
+
+    # 起始点设定，感觉后续可以优化掉，改成机巢起飞出发
     start = (0, 0)
     end = (height_map.shape[0] - 1, height_map.shape[1] - 1)
 
     print(f"地图尺寸: {height_map.shape}")
     print(f"起点: {start}, 终点: {end}")
 
+    # 无人机对象初始化能耗模型
     planner = EnhancedUAVMissionPlanner(
         height_map=height_map,
         battery_capacity=15000000,
