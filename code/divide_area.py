@@ -5,7 +5,19 @@
 '''
 import time
 import numpy as np
+import pandas as pd
+
 from tools import get_points_list, distance_calculate, conversion
+
+
+# 一维转二维
+def to2(area_id, points, shape):
+    matrix = [[None for _ in range(shape[1])] for _ in range(shape[0])]
+    for index in range(len(area_id)):
+        matrix[points[index][0]][points[index][1]] = area_id[index]
+
+    return matrix
+
 
 
 def divide(file_path, nest_points, nest_shape):
@@ -33,7 +45,11 @@ def divide(file_path, nest_points, nest_shape):
         area_id.append(id)
 
     print(points.shape)
-    return area_id
+
+    # 将一维area_di转换成二维
+    area = to2(area_id, points, shape)
+
+    return area
 
 
 
@@ -41,4 +57,6 @@ def divide(file_path, nest_points, nest_shape):
 x, shape_low = get_points_list("convert_data_nest.csv")
 nest_points = ([151, 87], [82, 41], [19, 60], [39, 149], [92, 123])
 area_id = divide("convert_data.csv", nest_points, shape_low)
-print(len(area_id))
+df = pd.DataFrame(area_id)
+df.to_csv("area_id.csv", index=False, header=False)
+print(area_id)
