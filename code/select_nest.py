@@ -4,6 +4,7 @@
 
 计划：
 将计算过程中离散点和机巢候选点的距离矩阵distance同时输出，用于做任务划分，具体怎么做再distance矩阵处有写
+5/19 计划有变，因为机巢选址的地图精度和无人机路径规划的精度不同，筛选距离后续还要精度转换，可以直接复用距离计算函数
 '''
 import time
 import numpy as np
@@ -92,7 +93,7 @@ def model(distance, num_nest_candidates, R, num_points, coordinates):
     print("\n机巢候选点坐标及是否被选中:")
     print(selected_df)
 
-    return selected_df
+    return selected_df, selected_nests
 
 
 
@@ -200,15 +201,19 @@ def select_nest(file_path, R, k):
     # 获取到机巢的id后，收敛distance矩阵，并抛出去
     # 这样就是离散点到每个机巢的距离矩阵了
     # 然后做判断，距离哪个近就标记id
-    #
 
 
     print("进入模型")
     #进入模型计算
-    select = model(distance, len(coordinates), R, len(points),  coordinates)
+    select, selected_nests = model(distance, len(coordinates), R, len(points),  coordinates)
     print(select[['X', 'Y']].values)
     print(f"Time: {time.time() - start_time:.2f}s")
-    return select[['X', 'Y']].values, shape
+
+
+    # 筛选距离矩阵
+    # ! 新想法，直接复用计算距离函数，这样不用转换精度
+    distance = distance[:, selected_nests]
+    return select[['X', 'Y']].values, shape, distance, points
 
 
 
@@ -216,5 +221,8 @@ def select_nest(file_path, R, k):
 nest 是一个机巢点列表
 shape 是使用地图的形状
 '''
-nest, shape = select_nest('../data/convert_data_nest.csv', 50, 400)
-print(nest, shape)
+nest, shape, distance, points = select_nest('convert_data_nest.csv', 50, 400)
+df = pd.DataFrame(distance)
+csv_filename = "distance.csv"
+df.to_csv(csv_filename, index=False, header=False)
+print(nest, shape, distance)

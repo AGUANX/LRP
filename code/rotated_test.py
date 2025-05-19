@@ -159,7 +159,7 @@ def calculate_path(path, hight, k_s, k_c):
 def main():
     start_time = time.time()
 
-    file_path = '../data/convert_data.csv'
+    file_path = 'convert_data.csv'
     df = pd.read_csv(file_path)
 
     Z = df.values
