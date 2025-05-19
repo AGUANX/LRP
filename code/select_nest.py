@@ -12,10 +12,9 @@ import pandas as pd
 import pulp
 import random
 
-from tools import get_points_list
+from tools import get_points_list, distance_calculate
 from tqdm import tqdm
 from matplotlib import pyplot as plt
-from scipy.spatial import distance_matrix
 from matplotlib.patches import Circle
 
 
@@ -32,9 +31,7 @@ def select(grid_size, num_nest_candidates, seed):
     return coordinates
 
 
-def distance_calculate(points, coordinates):
-    distances = distance_matrix(points, coordinates)
-    return distances
+
 
 
 # distance 距离矩阵
@@ -193,22 +190,17 @@ def select_nest(file_path, R, k):
     # 生成候选点
     random.seed(1234)
     coordinates = random.sample(points, k)
+    print(coordinates)
     print("机巢候选点数量：", len(coordinates))
 
     # 计算距离矩阵
     distance = distance_calculate(points, coordinates)
-
-    # 获取到机巢的id后，收敛distance矩阵，并抛出去
-    # 这样就是离散点到每个机巢的距离矩阵了
-    # 然后做判断，距离哪个近就标记id
-
 
     print("进入模型")
     #进入模型计算
     select, selected_nests = model(distance, len(coordinates), R, len(points),  coordinates)
     print(select[['X', 'Y']].values)
     print(f"Time: {time.time() - start_time:.2f}s")
-
 
     # 筛选距离矩阵
     # ! 新想法，直接复用计算距离函数，这样不用转换精度
