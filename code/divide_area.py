@@ -26,7 +26,9 @@ def divide(file_path, nest_points, nest_shape):
     print(shape_low)
 
     # 转换机巢选点精度
+    print(nest_points)
     coordinates = conversion(nest_shape, shape, nest_points)
+    print(coordinates)
 
     # 封装
     points = np.array(points_list)
@@ -59,4 +61,3 @@ nest_points = ([151, 87], [82, 41], [19, 60], [39, 149], [92, 123])
 area_id = divide("convert_data.csv", nest_points, shape_low)
 df = pd.DataFrame(area_id)
 df.to_csv("area_id.csv", index=False, header=False)
-print(area_id)

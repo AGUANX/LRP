@@ -3,6 +3,7 @@
 
 
 '''
+import numpy as np
 import pandas as pd
 from scipy.spatial import distance_matrix
 
@@ -41,8 +42,8 @@ def conversion(shape1, shape2, points):
     :return:
     '''
     # 计算缩放比例
-    x_scale = shape1[0] / shape2[0]
-    y_scale = shape1[1] / shape2[1]
+    x_scale = shape2[0] / shape1[0]
+    y_scale = shape2[1] / shape1[1]
     print(f"x_scale: {x_scale}, y_scale: {y_scale}")
 
     # 假设points是一个包含多个点的元组列表，每个点有x和y坐标
@@ -53,3 +54,32 @@ def conversion(shape1, shape2, points):
         y = round(point[1] * y_scale)
         converted_points.append((x, y))
     return converted_points
+
+
+
+def matrix_divide(matrix, i):
+    # 找到矩阵中值为 1 的行和列的索引
+    rows_with_1 = np.where(np.any(matrix == i, axis=1))[0]
+    cols_with_1 = np.where(np.any(matrix == i, axis=0))[0]
+
+    # 找到行和列索引的最小和最大值，确定包含所有 1 的子矩阵范围
+    min_row, max_row = np.min(rows_with_1), np.max(rows_with_1)
+    min_col, max_col = np.min(cols_with_1), np.max(cols_with_1)
+
+    dem = pd.read_csv("convert_data.csv")
+    dem_data = dem.values
+    dem_data = dem_data[min_row:max_row + 1, min_col:max_col + 1]
+
+    # 提取包含所有 1 的子矩阵
+    submatrix_with_1 = matrix[min_row:max_row + 1, min_col:max_col + 1]
+
+    # 将子矩阵中的非 1 值替换为 0
+    submatrix_with_1[submatrix_with_1 != i] = None
+    dem_data[submatrix_with_1 != i] = None
+
+    print("原始矩阵:")
+    print(matrix)
+    print("\n提取并处理后的子矩阵:")
+    print(submatrix_with_1)
+    print(dem_data)
+    return dem_data

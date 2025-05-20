@@ -11,6 +11,7 @@ import pandas as pd
 from osgeo import gdal
 import math
 import time
+from tools import matrix_divide
 
 class UAV:
     # 能耗系数 水平能耗k_s 垂直能耗 k_c
@@ -156,14 +157,12 @@ def calculate_path(path, hight, k_s, k_c):
     return total
 
 
-def main():
+def rotated_calculate(matrix):
     start_time = time.time()
 
-    file_path = 'convert_data.csv'
-    df = pd.read_csv(file_path)
-
-    Z = df.values
+    Z = matrix
     nrows, ncols = Z.shape
+    print(nrows, ncols)
     cx = ncols / 2.0
     cy = nrows / 2.0
     # 求一个旋转最大值
@@ -200,5 +199,11 @@ def main():
     print(f"Time: {time.time() - start_time:.2f}s")
 
 
-if __name__ == '__main__':
-    main()
+
+
+
+area_id = pd.read_csv('area_id.csv')
+area_id = area_id.values
+dem = matrix_divide(area_id, 2)
+rotated_calculate(dem)
+
