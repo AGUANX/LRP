@@ -1,62 +1,25 @@
-import os
-import numpy as np  # 导入 numpy 库
-from path_planner import find_optimal_path, read_map_from_csv
-from energy_calculator import HORIZONTAL_ENERGY_RATE, VERTICAL_ENERGY_RATE
+import numpy as np
+import pandas as pd
+from tools import matrix_divide
+from rotated_test import rotated_calculate
 
 
-def calculate_path_and_energy(map_file, start_point, end_point):
-    """
-    计算从起点到终点的最优路径和能耗。
+df = pd.read_csv("area_id.csv")
+data = df.values
 
-    参数:
-        map_file (str): 地图文件的路径。
-        start_point (tuple): 起点坐标。
-        end_point (tuple): 终点坐标。
+# 将空值（NaN）替换为一个特定的值（例如 -1），表示未分配的区域
+data = np.nan_to_num(data, nan=-1)
 
-    返回:
-        tuple: 最优路径和对应的能耗值。
-    """
-    # 检查地图文件是否存在
-    if not os.path.exists(map_file):
-        print(f"Error: File {map_file} not found!")
-        return None, None
+# 获取唯一的 ID 值（包括未分配的区域）
+unique_ids = np.unique(data)
+print(unique_ids)
 
-    # 读取地图数据
-    height_map = read_map_from_csv(map_file)
+# 创建一个自定义的颜色映射
+num_ids = len(unique_ids)
+colors = []
 
-    # 检查起点和终点是否有效
-    if np.isnan(height_map[start_point]) or np.isnan(height_map[end_point]):
-        print(f"Error: Start point {start_point} or end point {end_point} is invalid!")
-        return None, None
-
-    # 调用路径规划函数
-    best_path, best_cost = find_optimal_path(
-        map_file,
-        start_point,
-        end_point,
-        n_ants=20,
-        iterations=50,
-        alpha=1.5,
-        beta=2.5,
-        rho=0.7,
-        q=100,
-        wh=HORIZONTAL_ENERGY_RATE,
-        wv=VERTICAL_ENERGY_RATE,
-        backtrack_limit=5
-    )
-
-    return best_path, best_cost
-
-
-if __name__ == "__main__":
-    map_file = 'convert_data.csv'  # 地图数据文件路径
-    start_point = (200, 200)  # 起点坐标
-    end_point = (300, 300)  # 终点坐标
-
-    best_path, best_cost = calculate_path_and_energy(map_file, start_point, end_point)
-
-    if best_path and best_path[0] == start_point and best_path[-1] == end_point:
-        print(f"Best Path: {best_path}")
-        print(f"Best Cost: {best_cost}")
-    else:
-        print("No valid path found from start to end.")
+for i in range(num_ids-1):
+    print(i)
+    dem = matrix_divide(data, i)
+    rotated_calculate(dem)
+    p

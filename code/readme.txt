@@ -8,6 +8,7 @@ divide_area.py          任务划分
 energy_calculator.py    能耗模型
 main.py                 主函数
 path_planner.py         蚁群算法找两点之间的路径
+plot_divide.py          区域分割结果画图
 rotated_test.py         旋转牛耕法
 select_nest.py          机巢选址
 tools.py                写一些会复用的小工具

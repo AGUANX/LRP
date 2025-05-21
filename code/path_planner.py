@@ -295,8 +295,8 @@ def calculate_path_and_energy(map_file, start_point, end_point):
         map_file,
         start_point,
         end_point,
-        n_ants=50,
-        iterations=200,
+        n_ants=10,
+        iterations=50,
         alpha=1.5,
         beta=2.5,
         rho=0.7,
@@ -309,6 +309,7 @@ def calculate_path_and_energy(map_file, start_point, end_point):
     return best_path, best_cost
 
 
+# 直接调用路径规划函数
 if __name__ == "__main__":
     map_file = 'convert_data.csv'  # 地图数据文件路径
     start_point = (200, 200)      # 起点坐标

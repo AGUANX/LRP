@@ -11,6 +11,8 @@ import pandas as pd
 from osgeo import gdal
 import math
 import time
+
+from energy_calculator import calculate_total_energy
 from tools import matrix_divide
 
 class UAV:
@@ -186,7 +188,7 @@ def rotated_calculate(matrix):
         # 牛耕
         path = boustrophedon_path(mask)
         # 计算能耗
-        length = calculate_path(path, hight, u.k_s, u.k_c)
+        length = calculate_total_energy(path, hight)
         print(length)
 
         if length < best_length:
@@ -197,6 +199,7 @@ def rotated_calculate(matrix):
     print(f"最佳角度: {best_angle}°, 最低能耗: {best_length:.2f}")
     print(f"最高能耗：{k:.2f}")
     print(f"Time: {time.time() - start_time:.2f}s")
+    return best_length, path
 
 
 
