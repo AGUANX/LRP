@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from tools import matrix_divide
+from tools import matrix_divide, get_points_list, conversion
 from rotated_test import rotated_calculate
 
 
@@ -18,8 +18,22 @@ print(unique_ids)
 num_ids = len(unique_ids)
 colors = []
 
+a = []
+
+nest_points = ([151, 87], [82, 41], [19, 60], [39, 149], [92, 123])
+x, shape_low = get_points_list("convert_data_nest.csv")
+points_list, shape = get_points_list("convert_data.csv")
+nest_points = conversion(shape_low, shape, nest_points)
+
+no_work_energy_list = []
+
 for i in range(num_ids-1):
     print(i)
-    dem = matrix_divide(data, i)
-    rotated_calculate(dem)
-    p
+    dem, nest_point = matrix_divide(data, i, nest_points[i])
+    length, k, no_work_energy = rotated_calculate(dem, nest_point)
+    a.append(k)
+    no_work_energy_list.append(no_work_energy)
+
+for i in range(len(a)):
+    print("区域", i ,":", a[i])
+    print("区域", i ,"非工作能耗:", no_work_energy_list[i])

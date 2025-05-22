@@ -8,6 +8,7 @@ import pandas as pd
 from scipy.spatial import distance_matrix
 
 
+
 def get_points_list(file_path):
     '''
     获取范围可用坐标点, 返回包括可用坐标的一维列表
@@ -57,7 +58,7 @@ def conversion(shape1, shape2, points):
 
 
 
-def matrix_divide(matrix, i):
+def matrix_divide(matrix, i, point):
     # 找到矩阵中值为 1 的行和列的索引
     rows_with_1 = np.where(np.any(matrix == i, axis=1))[0]
     cols_with_1 = np.where(np.any(matrix == i, axis=0))[0]
@@ -77,9 +78,8 @@ def matrix_divide(matrix, i):
     submatrix_with_1[submatrix_with_1 != i] = None
     dem_data[submatrix_with_1 != i] = None
 
+    nest_point = [point[0] - min_row, point[1] - min_col]
     print("原始矩阵:")
     print(matrix)
     print("\n提取并处理后的子矩阵:")
-    print(submatrix_with_1)
-    print(dem_data)
-    return dem_data
+    return dem_data, nest_point

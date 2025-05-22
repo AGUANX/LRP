@@ -4,6 +4,9 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 import matplotlib.colors as mcolors
 
+
+points = ((500, 288), (271, 136), (63, 199), (129, 493), (304, 407))
+
 # 读取 CSV 文件
 df = pd.read_csv("area_id.csv", header=None)
 
@@ -39,6 +42,9 @@ plt.imshow(data, cmap=cmap, aspect='auto', vmin=np.min(unique_ids), vmax=np.max(
 
 # 添加颜色条（可选）
 plt.colorbar(ticks=unique_ids)
+# 绘制点
+for point in points:
+    plt.scatter(point[1], point[0], color='black', zorder=5)
 
 # 设置标题和标签
 plt.title("区域分配图")

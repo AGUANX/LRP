@@ -12,9 +12,13 @@ from osgeo import gdal
 import math
 import time
 
-from energy_calculator import calculate_total_energy
+from path_planner import calculate_path_and_energy
+from energy_calculator import calculate_total_energy, calculate_move_energy
 from tools import matrix_divide
 
+
+
+BATTERY_CAPACITY = 539640  # 无人机的电池容量 (焦耳)
 class UAV:
     # 能耗系数 水平能耗k_s 垂直能耗 k_c
     k_s = 0.0039
@@ -56,6 +60,21 @@ def rotate_3d_map(points, angle):
     size = int(math.sqrt(len(points)))  # 2r+1
     return rotated_points[:, 0].reshape(size, size), rotated_points[:, 1].reshape(size, size)
 
+
+
+def recover(point, angle_rad):
+    # 定义旋转矩阵
+    R = np.array([
+        [math.cos(angle_rad), math.sin(angle_rad)],
+        [-math.sin(angle_rad), math.cos(angle_rad)]
+    ])
+
+    # 计算逆矩阵（转置矩阵）
+    R_inv = R.T
+
+    # 变回原来的位置
+    p_restored = R_inv @ point
+    return p_restored
 
 
 def get_near_data(x, y, nrows, ncols):
@@ -143,6 +162,25 @@ def energyConsumption(dx, dy, dz, k_s, k_c):
     return round(total_energy, 4)  # 保留四位小数
 
 
+
+def calculate_step(path_best, best_angle, hight):
+    points = []
+    energy = 0
+    for i in range(len(path_best)-1):
+        new_energy = calculate_move_energy(path_best[i], path_best[i + 1], hight)
+        energy += new_energy
+        if energy > BATTERY_CAPACITY * 0.8:
+            energy = new_energy
+            points.append(path_best[i])
+
+    for i in range(len(points)):
+        points[i] = recover(points[i], best_angle)
+        points[i] = (round(points[i][0]), round(points[i][1]))
+
+    return points
+
+
+
 def calculate_path(path, hight, k_s, k_c):
     if not path:
         return 0
@@ -159,7 +197,7 @@ def calculate_path(path, hight, k_s, k_c):
     return total
 
 
-def rotated_calculate(matrix):
+def rotated_calculate(matrix, nest_point):
     start_time = time.time()
 
     Z = matrix
@@ -174,6 +212,8 @@ def rotated_calculate(matrix):
 
     best_length = float('inf')
     best_angle = 0
+    path_best = []
+    hight_best = []
 
     u = UAV()
     # test 最大能耗
@@ -194,19 +234,30 @@ def rotated_calculate(matrix):
         if length < best_length:
             best_length = length
             best_angle = angle
+            path_best = path
+            hight_best = hight
         if length > k:
             k = length
     print(f"最佳角度: {best_angle}°, 最低能耗: {best_length:.2f}")
     print(f"最高能耗：{k:.2f}")
     print(f"Time: {time.time() - start_time:.2f}s")
-    return best_length, path
+
+
+    # 计算返航点
+    no_work_energy = 0
+    points_step = calculate_step(path_best, best_angle, hight_best)
+    for point in points_step:
+        print(point, nest_point, matrix.shape)
+        path, energy = calculate_path_and_energy(matrix, point, nest_point)
+        no_work_energy += energy * 2
+    return best_length, k, no_work_energy
 
 
 
-
-
-area_id = pd.read_csv('area_id.csv')
-area_id = area_id.values
-dem = matrix_divide(area_id, 2)
-rotated_calculate(dem)
+# nest_points = ([151, 87], [82, 41], [19, 60], [39, 149], [92, 123])
+#
+# area_id = pd.read_csv('area_id.csv')
+# area_id = area_id.values
+# dem = matrix_divide(area_id, 2, nest_points[2])
+# rotated_calculate(dem)
 
