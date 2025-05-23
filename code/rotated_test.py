@@ -1,9 +1,7 @@
 '''
-这部分是为了计算任务区域的旋转牛耕法   还没模块化   要把mian函数改成接口
-计划：
-1. 接口输入单个任务区域的数据，高程矩阵  不需要覆盖的地方是nan
-2. 输出一个角度和电量消耗
-3. 把能耗模型改成外接模型，使用另外的文件去做
+这部分是为了计算任务区域的旋转牛耕法
+现在差一个问题没有解决，就是寻找返航点时，返航点不再范围内
+
 '''
 
 import numpy as np
@@ -17,13 +15,7 @@ from energy_calculator import calculate_total_energy, calculate_move_energy
 from tools import matrix_divide
 
 
-
 BATTERY_CAPACITY = 539640  # 无人机的电池容量 (焦耳)
-class UAV:
-    # 能耗系数 水平能耗k_s 垂直能耗 k_c
-    k_s = 0.0039
-    k_c = 0.0029
-
 
 def read_dem_data(file_path):
     gdal.AllRegister()
@@ -177,6 +169,11 @@ def calculate_step(path_best, best_angle, hight):
         points[i] = recover(points[i], best_angle)
         points[i] = (round(points[i][0]), round(points[i][1]))
 
+    for i in range(len(points)):
+        if pd.isnan(hight[points[i]]) or hight[points[i]] < 0:
+            # 对坐标点做操作
+
+
     return points
 
 
@@ -215,7 +212,6 @@ def rotated_calculate(matrix, nest_point):
     path_best = []
     hight_best = []
 
-    u = UAV()
     # test 最大能耗
     k = 0
     for angle in range(0, 180):
