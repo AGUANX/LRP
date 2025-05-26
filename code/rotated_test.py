@@ -12,8 +12,7 @@ import time
 
 from path_planner import calculate_path_and_energy
 from energy_calculator import calculate_total_energy, calculate_move_energy
-from tools import matrix_divide
-
+from tools import matrix_divide, distance_calculate
 
 BATTERY_CAPACITY = 539640  # 无人机的电池容量 (焦耳)
 
@@ -166,14 +165,13 @@ def calculate_step(path_best, best_angle, hight):
             points.append(path_best[i])
 
     for i in range(len(points)):
-        points[i] = recover(points[i], best_angle)
-        points[i] = (round(points[i][0]), round(points[i][1]))
+        if np.isnan(hight[points[i]]) or hight[points[i]] < 0:
+            # 计算距离并取最小值
+            print("返航点是空")
 
     for i in range(len(points)):
-        if pd.isnan(hight[points[i]]) or hight[points[i]] < 0:
-            # 对坐标点做操作
-
-
+        points[i] = recover(points[i], best_angle)
+        points[i] = (round(points[i][0]), round(points[i][1]))
     return points
 
 
@@ -213,7 +211,7 @@ def rotated_calculate(matrix, nest_point):
     hight_best = []
 
     # test 最大能耗
-    k = 0
+    max_length = 0
     for angle in range(0, 180):
         # 获取点旋转之后对应的点
         dx_rot, dy_rot = rotate_3d_map(points, angle)
@@ -232,21 +230,46 @@ def rotated_calculate(matrix, nest_point):
             best_angle = angle
             path_best = path
             hight_best = hight
-        if length > k:
-            k = length
+        if length > max_length:
+            max_length = length
     print(f"最佳角度: {best_angle}°, 最低能耗: {best_length:.2f}")
-    print(f"最高能耗：{k:.2f}")
+    print(f"最高能耗：{max_length:.2f}")
     print(f"Time: {time.time() - start_time:.2f}s")
 
 
     # 计算返航点
     no_work_energy = 0
     points_step = calculate_step(path_best, best_angle, hight_best)
+
+    points = []
+    for index, row in enumerate(matrix):
+        for j, x in enumerate(row):
+            if x > 0 and not pd.isna(x):
+                points.append((index, j))
+    points = np.array(points)
+
     for point in points_step:
         print(point, nest_point, matrix.shape)
-        path, energy = calculate_path_and_energy(matrix, point, nest_point)
+        if point[0] >= matrix.shape[0] or point[1] >= matrix.shape[1]:
+            point_list = list(point)
+
+            # 修改值
+            if point_list[0] >= matrix.shape[0] :
+                point_list[0] = matrix.shape[0] - 1
+            if point_list[1] >= matrix.shape[1] :
+                point_list[1] = matrix.shape[1] - 1
+
+            # 转换回元组
+            point = tuple(point_list)
+        if np.isnan(matrix[point]) or matrix[point] < 0:
+            p = np.array(point)
+            print("返航点处理", point)
+            distance = np.linalg.norm(points - p, axis=1)
+            point = points[distance.argmin()].tolist()
+        energy = calculate_move_energy(tuple(point), tuple(nest_point), matrix)
+        print(point, "非工作能耗：", energy)
         no_work_energy += energy * 2
-    return best_length, k, no_work_energy
+    return best_length, max_length, no_work_energy
 
 
 

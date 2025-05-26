@@ -28,11 +28,13 @@ nest_points = conversion(shape_low, shape, nest_points)
 no_work_energy_list = []
 
 for i in range(num_ids-1):
-    print(i)
+    print("开始计算区域", i)
     dem, nest_point = matrix_divide(data, i, nest_points[i])
-    length, k, no_work_energy = rotated_calculate(dem, nest_point)
-    a.append(k)
+    length, max_length, no_work_energy = rotated_calculate(dem, nest_point)
+    a.append(max_length)
     no_work_energy_list.append(no_work_energy)
+    print("区域非工作能耗：", no_work_energy)
+
 
 for i in range(len(a)):
     print("区域", i ,":", a[i])

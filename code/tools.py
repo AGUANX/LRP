@@ -79,7 +79,5 @@ def matrix_divide(matrix, i, point):
     dem_data[submatrix_with_1 != i] = None
 
     nest_point = [point[0] - min_row, point[1] - min_col]
-    print("原始矩阵:")
-    print(matrix)
-    print("\n提取并处理后的子矩阵:")
+
     return dem_data, nest_point

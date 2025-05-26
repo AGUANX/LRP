@@ -1,6 +1,5 @@
 import numpy as np
 import random
-from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -13,13 +12,9 @@ from energy_calculator import (
     VERTICAL_ENERGY_RATE
 )
 
-
-# 定义欧氏距离函数
 def euclidean_distance(a, b):
     return np.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
 
-
-# 读取CSV文件作为地图数据
 def read_map_from_csv(file_path):
     try:
         df = pd.read_csv(file_path, header=None)
@@ -31,8 +26,6 @@ def read_map_from_csv(file_path):
         print(f"Error reading map file: {e}")
         return None
 
-
-# 获取有效邻居节点（支持8方向）
 def get_valid_neighbors(current, height_map, visited, end, wh, wv, max_height_diff_func):
     x, y = current
     current_h = height_map[current]
@@ -49,6 +42,9 @@ def get_valid_neighbors(current, height_map, visited, end, wh, wv, max_height_di
                     if abs(neighbor_h - current_h) <= max_allowed:
                         candidates.append((nx, ny))
 
+    if not candidates:
+        return []
+
     priority = []
     end_dx = end[0] - x
     end_dy = end[1] - y
@@ -60,8 +56,6 @@ def get_valid_neighbors(current, height_map, visited, end, wh, wv, max_height_di
     sorted_nodes = [node for _, node in sorted(zip(priority, candidates), reverse=True)]
     return sorted_nodes
 
-
-# 启发式函数
 def heuristic(node, current, end, height_map, wh, wv, md_matrix, energy_cache):
     move_energy = calculate_move_energy(current, node, height_map, wh, wv, energy_cache)
     dist_to_end = md_matrix[node]
@@ -76,8 +70,6 @@ def heuristic(node, current, end, height_map, wh, wv, md_matrix, energy_cache):
 
     return (1 / (move_energy + 1e-10)) * (1 / (dist_to_end + 1)) * direction_bonus
 
-
-# 选择下一个节点
 def choose_next_node(current, height_map, visited, pheromone, alpha, beta, end, wh, wv, md_matrix, energy_cache, max_height_diff_func):
     neighbors = get_valid_neighbors(current, height_map, visited, end, wh, wv, max_height_diff_func)
 
@@ -96,13 +88,11 @@ def choose_next_node(current, height_map, visited, pheromone, alpha, beta, end, 
         total += tau * eta
 
     if total <= 0:
-        return random.choice(neighbors)
+        return random.choice(neighbors) if neighbors else None
 
     probabilities = [p / total for p in probabilities]
     return random.choices(neighbors, weights=probabilities, k=1)[0]
 
-
-# 高效回溯机制
 class SmartBacktracker:
     def __init__(self, jump_step=3):
         self.jump_step = jump_step
@@ -115,8 +105,6 @@ class SmartBacktracker:
             return new_path, new_path[-1], visited
         return path, path[-1], visited
 
-
-# 单只蚂蚁的搜索逻辑
 def run_ant(params):
     height_map, start, end, alpha, beta, rho, q, wh, wv, md_matrix, energy_cache, max_height_diff_func, backtrack_limit, pheromone = params
     path = [start]
@@ -158,8 +146,6 @@ def run_ant(params):
 
     return path, energy_used
 
-
-# 蚁群算法
 def ant_colony_optimization(height_map, start, end, n_ants=20, iterations=100, alpha=1.2, beta=3.0, rho=0.8, q=200, wh=HORIZONTAL_ENERGY_RATE, wv=VERTICAL_ENERGY_RATE, max_height_diff_func=None, backtrack_limit=10):
     pheromone = np.ones_like(height_map, dtype=float) * 0.01
     best_path = None
@@ -180,34 +166,33 @@ def ant_colony_optimization(height_map, start, end, n_ants=20, iterations=100, a
     for iteration in range(iterations):
         all_paths = []
         all_costs = []
-        with ProcessPoolExecutor(max_workers=4) as executor:
-            params_list = [
-                (
-                    height_map,
-                    start,
-                    end,
-                    alpha,
-                    beta,
-                    rho,
-                    q,
-                    wh,
-                    wv,
-                    md_matrix,
-                    energy_cache,
-                    max_height_diff_func,
-                    backtrack_limit,
-                    pheromone.copy()
-                )
-                for _ in range(n_ants)
-            ]
-            try:
-                results = executor.map(run_ant, params_list)
-                for path, cost in results:
-                    all_paths.append(path)
-                    all_costs.append(cost)
-            except Exception as e:
-                print(f"Error in iteration {iteration + 1}: {e}")
-                continue
+        params_list = [
+            (
+                height_map,
+                start,
+                end,
+                alpha,
+                beta,
+                rho,
+                q,
+                wh,
+                wv,
+                md_matrix,
+                energy_cache,
+                max_height_diff_func,
+                backtrack_limit,
+                pheromone.copy()
+            )
+            for _ in range(n_ants)
+        ]
+        try:
+            for params in params_list:
+                path, cost = run_ant(params)
+                all_paths.append(path)
+                all_costs.append(cost)
+        except Exception as e:
+            print(f"Error in iteration {iteration + 1}: {e}")
+            continue
 
         pheromone *= (1 - rho)
         sorted_indices = np.argsort(all_costs)
@@ -228,10 +213,7 @@ def ant_colony_optimization(height_map, start, end, n_ants=20, iterations=100, a
 
     return best_path if best_path is not None else [], best_cost, best_iteration
 
-
-# 定义接口函数
-def find_optimal_path(map_file, start, end, n_ants=20, iterations=100, alpha=1.2, beta=3.0, rho=0.8, q=200, wh=HORIZONTAL_ENERGY_RATE, wv=VERTICAL_ENERGY_RATE, backtrack_limit=10):
-    height_map = read_map_from_csv(map_file)
+def find_optimal_path(height_map, start, end, n_ants=20, iterations=100, alpha=1.2, beta=3.0, rho=0.8, q=200, wh=HORIZONTAL_ENERGY_RATE, wv=VERTICAL_ENERGY_RATE, backtrack_limit=10):
     best_path, best_cost, _ = ant_colony_optimization(
         height_map,
         start=start,
@@ -249,13 +231,9 @@ def find_optimal_path(map_file, start, end, n_ants=20, iterations=100, alpha=1.2
     )
     return best_path, best_cost
 
-
-# 定义最大高度差函数
 def max_height_diff(current, end):
     return 70
 
-
-# 选择有效的起点和终点
 def select_valid_points(height_map):
     valid_points = []
     for i in range(height_map.shape[0]):
@@ -264,37 +242,16 @@ def select_valid_points(height_map):
                 valid_points.append((i, j))
     return valid_points
 
-
 def calculate_path_and_energy(height_map, start_point, end_point):
-    """
-    计算从起点到终点的最优路径和能耗。
-
-    参数:
-        height_map : 地图数据
-        start_point (tuple): 起点坐标。
-        end_point (tuple): 终点坐标。
-
-    返回:
-        tuple: 最优路径和对应的能耗值。
-    """
-    # # 检查地图文件是否存在
-    # if not os.path.exists(map_file):
-    #     print(f"Error: File {map_file} not found!")
-    #     return None, None
-    #
-    # # 读取地图数据
-    # height_map = read_map_from_csv(map_file)
-
-    # 检查起点和终点是否有效
-    if np.isnan(height_map[start_point]) or np.isnan(height_map[end_point]):
+    if np.isnan(height_map[start_point[0]][start_point[1]]) or np.isnan(height_map[end_point[0]][end_point[1]]):
+        print(start_point, end_point)
         height_map_df = pd.DataFrame(height_map)
         height_map_df.to_csv("test_den.csv", index=False)
         print(f"Error: Start point {start_point} or end point {end_point} is invalid!")
         return None, None
 
-    # 调用路径规划函数
     best_path, best_cost = find_optimal_path(
-        map_file,
+        height_map,
         start_point,
         end_point,
         n_ants=10,
@@ -310,18 +267,15 @@ def calculate_path_and_energy(height_map, start_point, end_point):
 
     return best_path, best_cost
 
-
-# 直接调用路径规划函数
-if __name__ == "__main__":
-    map_file = 'convert_data.csv'  # 地图数据文件路径
-    start_point = (200, 200)      # 起点坐标
-    end_point = (400, 300)        # 终点坐标
-
-    hight = pd.read_csv(map_file).values
-    best_path, best_cost = calculate_path_and_energy(hight, start_point, end_point)
-
-    if best_path and best_path[0] == start_point and best_path[-1] == end_point:
-        print(f"Best Path: {best_path}")
-        print(f"Best Cost: {best_cost}")
-    else:
-        print("No valid path found from start to end.")
+# if __name__ == "__main__":
+#     map_file = 'convert_data.csv'
+#     start_point = (200, 200)
+#     end_point = (400, 300)
+#     height_map = read_map_from_csv(map_file)
+#     best_path, best_cost = calculate_path_and_energy(height_map, start_point, end_point)
+#
+#     if best_path and best_path[0] == start_point and best_path[-1] == end_point:
+#         print(f"Best Path: {best_path}")
+#         print(f"Best Cost: {best_cost}")
+#     else:
+#         print("No valid path found from start to end.")
