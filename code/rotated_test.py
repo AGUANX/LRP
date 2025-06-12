@@ -6,6 +6,7 @@
 
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from osgeo import gdal
 import math
 import time
@@ -60,11 +61,9 @@ def recover(point, angle_rad):
         [-math.sin(angle_rad), math.cos(angle_rad)]
     ])
 
-    # 计算逆矩阵（转置矩阵）
-    R_inv = R.T
-
     # 变回原来的位置
-    p_restored = R_inv @ point
+    p_restored = np.dot(point, R)
+
     return p_restored
 
 
@@ -154,7 +153,7 @@ def energyConsumption(dx, dy, dz, k_s, k_c):
 
 
 
-def calculate_step(path_best, best_angle, hight):
+def calculate_step(path_best, best_angle, hight, cx, cy):
     points = []
     energy = 0
     for i in range(len(path_best)-1):
@@ -162,16 +161,17 @@ def calculate_step(path_best, best_angle, hight):
         energy += new_energy
         if energy > BATTERY_CAPACITY * 0.8:
             energy = new_energy
-            points.append(path_best[i])
+            # point = recover(path_best[i], best_angle)
+            point = (path_best[i][0] , path_best[i][1])
+            # point = recover(point, - best_angle)
+            point = (round(point[0]), round(point[1]))
+            points.append(point)
 
     for i in range(len(points)):
         if np.isnan(hight[points[i]]) or hight[points[i]] < 0:
-            # 计算距离并取最小值
             print("返航点是空")
 
-    for i in range(len(points)):
-        points[i] = recover(points[i], best_angle)
-        points[i] = (round(points[i][0]), round(points[i][1]))
+
     return points
 
 
@@ -192,6 +192,42 @@ def calculate_path(path, hight, k_s, k_c):
     return total
 
 
+
+def plot_area(matrix_data, regular_coords, special_coord):
+    # 画出区域的范围和坐标戴拿
+    plt.figure(figsize=(10, 8))
+
+    # 绘制矩阵区域
+    plt.imshow(matrix_data, cmap='gray_r', origin='lower', alpha=0.7)
+
+    # 绘制普通坐标点
+    regular_y, regular_x = zip(*regular_coords)
+    plt.scatter(regular_x, regular_y, c='blue', s=10, alpha=0.7, label='Back Points')
+
+    # 绘制特殊坐标点
+    special_x, special_y = special_coord
+    plt.scatter(special_x, special_y, c='red', s=50, edgecolors='black', linewidth=1, label='Nest Point')
+
+    # 添加图例和标签
+    plt.legend()
+    plt.title('Matrix')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.grid(True, alpha=0.3)
+
+    plt.show()
+
+def nest_trans(point, angle):
+    angle_rad = math.radians(angle)
+    R = np.array([
+        [math.cos(angle_rad), math.sin(angle_rad)],
+        [-math.sin(angle_rad), math.cos(angle_rad)]
+    ])
+    R_transpose = R.T
+    rotated_point = np.dot(R_transpose, point)
+    return rotated_point
+
+
 def rotated_calculate(matrix, nest_point):
     start_time = time.time()
 
@@ -200,6 +236,7 @@ def rotated_calculate(matrix, nest_point):
     print(nrows, ncols)
     cx = ncols / 2.0
     cy = nrows / 2.0
+    print("cx", cx, "cy", cy)
     # 求一个旋转最大值
     r = math.ceil(math.sqrt((ncols / 2) ** 2 + (nrows / 2) ** 2))
     print('最大距离r：', r)
@@ -230,6 +267,7 @@ def rotated_calculate(matrix, nest_point):
             best_angle = angle
             path_best = path
             hight_best = hight
+            mask_test = mask
         if length > max_length:
             max_length = length
     print(f"最佳角度: {best_angle}°, 最低能耗: {best_length:.2f}")
@@ -239,37 +277,54 @@ def rotated_calculate(matrix, nest_point):
 
     # 计算返航点
     no_work_energy = 0
-    points_step = calculate_step(path_best, best_angle, hight_best)
+    points_step = calculate_step(path_best, best_angle, hight_best, cx, cy)
 
     points = []
-    for index, row in enumerate(matrix):
+    for index, row in enumerate(hight_best):
         for j, x in enumerate(row):
             if x > 0 and not pd.isna(x):
                 points.append((index, j))
     points = np.array(points)
 
+    # 机巢点处理
+    nest = nest_point
+    nest = (nest[0] - cx, nest[1] - cy)
+    nest = nest_trans(nest, best_angle)
+    nest = (nest[0] + r, nest[1] + r)
+    nest = (round(nest[0]), round(nest[1]))
+
+    if hight_best[nest] < 0 or np.isnan(hight_best[nest]):
+        p = np.array(nest)
+        print("机巢点处理", nest)
+        distance = np.linalg.norm(points - p, axis=1)
+        nest = points[distance.argmin()].tolist()
+
+
+
     for point in points_step:
-        print(point, nest_point, matrix.shape)
-        if point[0] >= matrix.shape[0] or point[1] >= matrix.shape[1]:
+        if point[0] >= hight_best.shape[0] or point[1] >= hight_best.shape[1]:
             point_list = list(point)
 
             # 修改值
-            if point_list[0] >= matrix.shape[0] :
-                point_list[0] = matrix.shape[0] - 1
-            if point_list[1] >= matrix.shape[1] :
-                point_list[1] = matrix.shape[1] - 1
+            if point_list[0] >= hight_best.shape[0] :
+                point_list[0] = hight_best.shape[0] - 1
+            if point_list[1] >= hight_best.shape[1] :
+                point_list[1] = hight_best.shape[1] - 1
 
             # 转换回元组
             point = tuple(point_list)
-        if np.isnan(matrix[point]) or matrix[point] < 0:
+        if np.isnan(hight_best[point]) or hight_best[point] < 0:
             p = np.array(point)
             print("返航点处理", point)
             distance = np.linalg.norm(points - p, axis=1)
             point = points[distance.argmin()].tolist()
-        energy = calculate_move_energy(tuple(point), tuple(nest_point), matrix)
+        energy = calculate_move_energy(tuple(point), tuple(nest), hight_best)
         print(point, "非工作能耗：", energy)
         no_work_energy += energy * 2
-    return best_length, max_length, no_work_energy
+    print("返航点", points_step)
+    print("机巢点", nest_point, "旋转后", nest)
+    plot_area(hight_best, points_step, nest)
+    return best_length, max_length, no_work_energy, points_step
 
 
 
