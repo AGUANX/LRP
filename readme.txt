@@ -70,25 +70,7 @@ LRP/
 - 整条路径总能耗评估
 - 电池容量约束检查（默认 539640 J）[reference:9]
 
----
 
-## 🚀 快速开始
-
-### 环境要求
-- Python 3.8+
-- 依赖库：`numpy`, `pandas`, `matplotlib`, `scipy`, `tqdm`, `osgeo.gdal`
-
-### 安装依赖
-```bash
-pip install numpy pandas matplotlib scipy tqdm
-# GDAL 需单独安装（参考 https://gdal.org/）
-```
-
-### 运行主程序
-```bash
-cd code
-python main.py
-```
 
 ### 数据准备
 - `convert_data.csv`：高精度高程地图
@@ -125,21 +107,4 @@ python main.py
 - 坐标点以 `(行, 列)` 索引表示
 - 支持不同精度地图间的**坐标转换**（缩放+取整）[reference:12]
 
----
 
-## 📝 开发状态
-
-当前版本已完成核心算法实现，后续计划：
-- [ ] 优化蚁群算法收敛速度
-- [ ] 增加可视化界面
-- [ ] 支持更多路径规划算法（A*、RRT等）
-- [ ] 接入真实地形数据接口
-
-
-## 👤 作者
-
-**AGUANX** · [GitHub](https://github.com/AGUANX)
-
----
-
-> 📌 *本项目源于选址-路径规划问题的研究与实现，欢迎 Star ⭐ 和 Fork！*
